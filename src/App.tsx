@@ -1,33 +1,76 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState, useEffect, use } from 'react'
 import './App.css'
+
+type MousePosition = {
+  x: number;
+  y: number;
+};
+
+type PointMouseLogger = {
+  mousePosition?: MousePosition;
+};
+// this is to encapsulate Cross-cutting concers    --- HOC
+const withMousePosition = (WrappedComponent: any) => {
+  return (props: any) => {
+    const [mousePosition, setMousePosition] = useState<MousePosition | null>({ x: 0, y: 0 });
+
+    const handleMousePositionChange = (e: any) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    }
+
+    useEffect(() => {
+      window.addEventListener('mousemove', handleMousePositionChange);
+
+      return () => {
+        window.removeEventListener('mousemove', handleMousePositionChange);
+      }; 
+
+    }, []);
+
+    return <WrappedComponent {...props} mousePosition= { mousePosition} />
+  }
+}
+
+const PanelMouseLogger = ({ mousePosition }: PointMouseLogger) => {
+  if(!mousePosition) {
+    return null
+  }
+  return (
+    <>
+      <h2>Mouse Position</h2>
+      <p>X: {mousePosition.x}</p>
+      <p>Y: {mousePosition.y}</p>
+    </>
+  )
+}
+
+const PointMouseLogger = ({ mousePosition }: PointMouseLogger) => {
+  if(!mousePosition) {
+    return null
+  }
+  return (
+    <>
+      ({mousePosition.x}, {mousePosition.y})
+    </>
+  )
+}
+
+const PointMouseTracker = withMousePosition(PointMouseLogger);
+const PanelMouseTracker = withMousePosition(PanelMouseLogger);
 
 function App() {
   const [count, setCount] = useState(0)
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
+      <h1>Mouse track</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
+        <button onClick={() => setCount((c) => c + 1)}>
           count is {count}
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+        <PointMouseTracker />
+        <PanelMouseTracker />
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }
